@@ -47,6 +47,8 @@ UPDATE_PACKAGE() {
 #UPDATE_PACKAGE "argon" "sbwml/luci-theme-argon" "openwrt-25.12"
 #UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 #UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
+#UPDATE_PACKAGE "fluent" "LazuliKao/luci-theme-fluent" "main"
+#UPDATE_PACKAGE "footstrap" "VizzleTF/luci-theme-footstrap" "main"
 #UPDATE_PACKAGE "kucat" "sirpdboy/luci-theme-kucat" "master"
 #UPDATE_PACKAGE "kucat-config" "sirpdboy/luci-app-kucat-config" "master"
 #UPDATE_PACKAGE "noobwrt" "nooblk-98/luci-theme-noobwrt" "master"
@@ -126,7 +128,7 @@ UPDATE_PACKAGE "luci-app-daede" "kenzok8/openwrt-daede" "main" "" "dae daed luci
 UPDATE_VERSION() {
 	local PKG_NAME=$1
 	local PKG_MARK=${2:-false}
-	local PKG_FILES=$(find ./ ./feeds/packages/ -maxdepth 3 -type f -wholename "*/$PKG_NAME/Makefile")
+	local PKG_FILES=$(find ./package/ ./feeds/packages/ -maxdepth 3 -type f -wholename "*/$PKG_NAME/Makefile")
 
 	if [ -z "$PKG_FILES" ]; then
 		echo "$PKG_NAME not found!"
