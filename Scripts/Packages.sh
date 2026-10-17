@@ -71,7 +71,7 @@ UPDATE_PACKAGE "diskmanager" "4IceG/luci-app-mini-diskmanager" "main" # 磁盘�
 #UPDATE_PACKAGE "mosdns" "sbwml/luci-app-mosdns" "v5" "" "v2dat"
 #UPDATE_PACKAGE "openlist2" "sbwml/luci-app-openlist2" "main"
 #UPDATE_PACKAGE "qbittorrent" "sbwml/luci-app-qbittorrent" "master" "" "qt6base qt6tools rblibtorrent"
-#UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
+UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 
 #UPDATE_PACKAGE "ddns-go" "sirpdboy/luci-app-ddns-go" "main"
 #UPDATE_PACKAGE "netspeedtest" "sirpdboy/netspeedtest" "main" "" "homebox ookla-speedtest"
@@ -97,7 +97,8 @@ UPDATE_PACKAGE "diskmanager" "4IceG/luci-app-mini-diskmanager" "main" # 磁盘�
 # 同库不同作者
 UPDATE_PACKAGE "diskman" "lisaac/luci-app-diskman" "master"
 
-UPDATE_PACKAGE "quickfile-go" "home16668/luci-app-quickfile-go" "main"
+# 更新 26-6-3
+#UPDATE_PACKAGE "quickfile-go" "home16668/luci-app-quickfile-go" "main"
 
 # tb 新增两个
 #UPDATE_PACKAGE "fancontrol" "rockjake/luci-app-fancontrol" "main"

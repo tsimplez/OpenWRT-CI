@@ -30,6 +30,12 @@ sed -i "s/hostname='.*'/hostname='$WRT_NAME'/g" $CFG_FILE
 
 sed -i 's/mirrors.vsean.net\/openwrt/mirror.nju.edu.cn\/immortalwrt/g' ./package/emortal/default-settings/files/99-default-settings-chinese
 
+# 使用 nginx 作为 LuCI Web 服务，避免 default-settings 依赖 luci 后继续拉入 uhttpd
+DEFAULT_SETTINGS_MAKEFILE='./package/emortal/default-settings/Makefile'
+if [ -f "$DEFAULT_SETTINGS_MAKEFILE" ]; then
+	sed -i 's/DEPENDS:=+luci$/DEPENDS:=+luci-nginx/' "$DEFAULT_SETTINGS_MAKEFILE"
+fi
+
 #仅使用80端口，不启用HTTPS重定向
 mkdir -p ./files/etc/config
 cat > ./files/etc/config/nginx <<'EOF'
