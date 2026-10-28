@@ -123,6 +123,9 @@ UPDATE_PACKAGE "luci-app-lucky" "whzhni1/luci-app-lucky" "main"
 UPDATE_PACKAGE "luci-app-daede" "kenzok8/openwrt-daede" "main" "" "dae daed luci-app-daed vmlinux-btf"
 #UPDATE_PACKAGE "luci-app-daed" "breeze303/luci-app-daed" "kix"
 
+# honk 后端内嵌 doona，连同官方 LuCI 管理页一起编译。
+bash "$GITHUB_WORKSPACE/.github/scripts/prepare-honk.sh" || exit 1
+
 #################### ----- 自定义 end ---------- ####################
 
 #更新软件包版本

@@ -1,0 +1,47 @@
+# 默认直连；在 LuCI「服务 → honk」或 doona 中添加订阅、节点和路由规则。
+# @LAN_IP@ 由构建时的 WRT_IP 替换。变更路由器 LAN 地址后也要修改 listen。
+global {
+    wan_interface: auto
+    lan_interface: br-lan
+    log_level: info
+    dial_mode: domain++
+    auto_config_kernel_parameter: true
+    data_dir: '/etc/honk/data'
+    log_file: ''
+    tcp_check_url: 'https://www.gstatic.com/generate_204'
+    tcp_check_http_method: HEAD
+    check_interval: 300s
+    bootstrap_resolver: '223.5.5.5:53'
+    nfqueue_enable: true
+}
+
+dns {
+    upstream {
+        local: 'udp://127.0.0.1:53'
+    }
+    routing {
+        request {
+            fallback: local
+        }
+        response {
+            fallback: local
+        }
+    }
+}
+
+routing {
+    fallback: direct
+}
+
+experimental {
+    native_api {
+        enabled: true
+        listen: '@LAN_IP@:9090'
+        password_auth: true
+        config_write: true
+        ui: 'embedded'
+    }
+    cache_file {
+        enabled: true
+    }
+}

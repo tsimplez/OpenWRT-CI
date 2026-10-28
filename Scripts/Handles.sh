@@ -17,6 +17,19 @@ for PKG_FILE in $PACKAGE_PATH/openwrt-daede/{dae,daed,luci-app-daede}/Makefile; 
 	grep -H -E '^PKG_(VERSION|RELEASE):=' "$PKG_FILE"
 done
 
+# 两套代理都只预装，默认不运行，由用户在 LuCI 中选择启用。
+for SERVICE_CONFIG in \
+	"$PACKAGE_PATH/openwrt-daede/daed/files/daed.config" \
+	"$PACKAGE_PATH/honk/files/honk.config"; do
+	if [ ! -f "$SERVICE_CONFIG" ]; then
+		echo "Missing service config: $SERVICE_CONFIG"
+		exit 1
+	fi
+	sed -i "s/^[[:space:]]*option enabled .*/\toption enabled '0'/" "$SERVICE_CONFIG"
+	grep -q "^[[:space:]]*option enabled '0'$" "$SERVICE_CONFIG" \
+		|| { echo "Failed to disable service by default: $SERVICE_CONFIG"; exit 1; }
+done
+
 
 # 新安装默认从 Lucky 官网下载最新 Beta 核心，并继续由插件自动匹配目标架构。
 LUCKY_CONFIG="$PACKAGE_PATH/luci-app-lucky/luci-app-lucky/root/etc/config/lucky"
