@@ -18,9 +18,16 @@ https://github.com/darkrain88/daed-immWRT-CI
 
 固件新增 `honk`、`luci-app-honk` 和中文翻译，使用
 [daeuniverse/openwrt-packages](https://github.com/daeuniverse/openwrt-packages)
-的官方源码构建配方。固定 honk `v0.1.0-beta.1`，内嵌该版本锁定的
-[doona](https://github.com/Zakkaus/doona) `0.1.0-beta.20`；构建时校验面板及
-eBPF 链接器的 SHA-256，并安装 honk 锁定的 Rust stable/nightly 工具链。
+的最新官方源码构建配方。每次编译自动选择 honk 和
+[doona](https://github.com/Zakkaus/doona) 的最新已发布版本，包含 alpha、beta、rc
+预发布版，排除 Debug 构建；分别按版本号选择，不再固定版本。新版 doona 的标准版和
+lite 版内嵌到 honk，下载仍校验发布包的 SHA-256。Rust stable/nightly 工具链与
+eBPF 链接器继续使用本次 honk 源码要求的版本，并校验链接器的 SHA-256。
+
+每次构建解析一次版本，实际 tag、提交及面板校验值记录在构建报告
+`honk-versions.json` 中。GitHub API 使用工作流已有的 `GITHUB_TOKEN`；遇到限流时
+改读公开发布订阅源。版本解析或校验失败会停止构建，不会退回旧版本。
+前后端分别跟随最新发布版，新功能仍取决于该次 honk 的 API 支持。
 
 全新安装时，daed 和 honk 都默认关闭，由用户在 LuCI 中选择启用其中一个。
 使用 honk 时，在 LuCI「服务 → honk」编辑配置并启用，初始路由为全部直连。

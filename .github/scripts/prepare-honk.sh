@@ -4,17 +4,19 @@ set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
-# Keep the recipe, backend and its embedded doona version reproducible.
-FEED_COMMIT=fcbc57abdec03713f877ed855d2c56a17429f35c
-HONK_TAG=v0.1.0-beta.1
-
 test -d ./package
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
+# Refresh versions for every build, then keep that selection throughout the build.
+VERSIONS_FILE="$TEMP_DIR/honk-versions.json"
+python3 "$SCRIPT_DIR/resolve-honk-versions.py" "$VERSIONS_FILE"
+HONK_TAG=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["honk"]["tag"])' "$VERSIONS_FILE")
+
 git -C "$TEMP_DIR" init -q
 git -C "$TEMP_DIR" remote add origin https://github.com/daeuniverse/openwrt-packages.git
-git -C "$TEMP_DIR" fetch --depth=1 origin "$FEED_COMMIT"
+git -C "$TEMP_DIR" fetch --depth=1 origin HEAD
 git -C "$TEMP_DIR" checkout -q --detach FETCH_HEAD
+FEED_COMMIT=$(git -C "$TEMP_DIR" rev-parse HEAD)
 
 for name in honk luci-app-honk luci-lib-daeuniverse; do
 	# Remove only exact-name feed recipes; substring matching would also remove daed.
@@ -30,9 +32,12 @@ done
 git clone --depth=1 --single-branch --branch "$HONK_TAG" \
 	https://github.com/daeuniverse/honk.git ./package/honk/src
 
-python3 - "$PROJECT_DIR/Config/honk.dae" "${WRT_IP:?WRT_IP is required}" <<'PY'
+python3 - "$PROJECT_DIR/Config/honk.dae" "${WRT_IP:?WRT_IP is required}" "$VERSIONS_FILE" "$FEED_COMMIT" <<'PY'
 import ipaddress
+import json
 from pathlib import Path
+import re
+import subprocess
 import sys
 
 def replace_once(path, before, after):
@@ -41,8 +46,32 @@ def replace_once(path, before, after):
         raise SystemExit(f"honk: unexpected upstream content in {path}: {before!r}")
     path.write_text(text.replace(before, after))
 
+def replace_setting(path, key, separator, value):
+    text, count = re.subn(rf"^{re.escape(key)}{re.escape(separator)}.*$",
+                          f"{key}{separator}{value}", path.read_text(), flags=re.MULTILINE)
+    if count != 1:
+        raise SystemExit(f"honk: expected one {key} setting in {path}, found {count}")
+    path.write_text(text)
+
+versions_path = Path(sys.argv[3])
+versions = json.loads(versions_path.read_text())
+versions["feed_revision"] = sys.argv[4]
 package = Path("package/honk")
 makefile = package / "Makefile"
+source = package / "src"
+revision = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
+if revision != versions["honk"]["revision"]:
+    raise SystemExit("honk: release tag changed during version resolution")
+# Keep the package metadata and the binary's embedded version aligned with the checkout.
+replace_setting(makefile, "PKG_VERSION", ":=", versions["honk"]["package_version"])
+replace_setting(makefile, "HONK_GIT_TAG", ":=", versions["honk"]["tag"])
+# Use the newest published UI, retaining upstream's checksum/notice verification.
+pins = source / ".github/ci/pins.env"
+for key, field in (("DOONA_VERSION", "version"), ("DOONA_REVISION", "revision"),
+                   ("DOONA_SHA256", "sha256"), ("DOONA_LITE_SHA256", "lite_sha256")):
+    replace_setting(pins, key, "=", versions["doona"][field])
+versions_path.write_text(json.dumps(versions, indent=2) + "\n")
+
 # This firmware builds its own BTF; detached BTF is only needed without it.
 replace_once(makefile, "DEPENDS:=+libstdcpp", "DEPENDS:=@(aarch64||x86_64) +libstdcpp")
 replace_once(makefile, "+vmlinux-btf", "+!KERNEL_DEBUG_INFO_BTF:vmlinux-btf")
@@ -76,3 +105,6 @@ PY
 echo "honk: official feed $FEED_COMMIT; backend $HONK_TAG"
 grep '^DOONA_' ./package/honk/src/.github/ci/pins.env
 grep -q "option enabled '0'" ./package/honk/files/honk.config
+REPORT_DIR="${GITHUB_WORKSPACE:-$PROJECT_DIR}/build-reports"
+mkdir -p "$REPORT_DIR"
+cp "$VERSIONS_FILE" "$REPORT_DIR/honk-versions.json"
