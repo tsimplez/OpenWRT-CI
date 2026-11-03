@@ -42,8 +42,9 @@ import sys
 
 def replace_once(path, before, after):
     text = path.read_text()
-    if text.count(before) != 1:
-        raise SystemExit(f"honk: unexpected upstream content in {path}: {before!r}")
+    count = text.count(before)
+    if count != 1:
+        raise SystemExit(f"honk: expected one occurrence in {path}, found {count}: {before!r}")
     path.write_text(text.replace(before, after))
 
 def replace_setting(path, key, separator, value):
@@ -85,8 +86,9 @@ unset RUSTUP_TOOLCHAIN
 ''')
 replace_once(package / "build.sh", "cargo build --release", "cargo build --locked --release")
 
-# The official init script checks dae; this firmware also includes daed.
-replace_once(package / "files/honk.init", '\tlocal config_file\n', '''\tif ubus call service list '{"name":"daed"}' 2>/dev/null |
+# Anchor to the dae guard in start_service: reload_service also declares config_file.
+dae_guard = '\tif ubus call service list \'{"name":"dae"}\' 2>/dev/null |\n'
+replace_once(package / "files/honk.init", dae_guard, '''\tif ubus call service list '{"name":"daed"}' 2>/dev/null |
 \t\tjsonfilter -q -e '@.daed.instances[*].running' | grep -q true; then
 \t\tlogger -t honk "daed is running; disable and stop daed before starting honk"
 \t\treturn 1
@@ -95,8 +97,7 @@ replace_once(package / "files/honk.init", '\tlocal config_file\n', '''\tif ubus 
 \tmkdir -p /etc/honk/data
 \tchmod 0700 /etc/honk /etc/honk/data
 
-\tlocal config_file
-''')
+''' + dae_guard)
 lan_ip = ipaddress.IPv4Address(sys.argv[2])
 config = Path(sys.argv[1]).read_text().replace("@LAN_IP@", str(lan_ip))
 (package / "files/config.dae").write_text(config)
@@ -104,7 +105,8 @@ PY
 
 echo "honk: official feed $FEED_COMMIT; backend $HONK_TAG"
 grep '^DOONA_' ./package/honk/src/.github/ci/pins.env
-grep -q "option enabled '0'" ./package/honk/files/honk.config
+# Upstream now uses rc.d for autostart; its first-boot script disables fresh installs.
+grep -qF '/etc/init.d/honk disable' ./package/honk/files/honk.uci-defaults
 REPORT_DIR="${GITHUB_WORKSPACE:-$PROJECT_DIR}/build-reports"
 mkdir -p "$REPORT_DIR"
 cp "$VERSIONS_FILE" "$REPORT_DIR/honk-versions.json"
