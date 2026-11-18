@@ -8,7 +8,7 @@ https://github.com/darkrain88/daed-immWRT-CI
 ## ebpf
 [开启内核eBPF(tb)](https://github.com/GHNERCH/OpenWRT-CI)
 
-最后同步:Update WRT-CORE.yml GHNERCH* 11-3 14:43
+add CONFIG_PACKAGE_luci-app-hd-idle=y GHNERCH* 2026/11/14 01:31 e2bdd905
 
 ## daed ???
 固件内置 [kenzok8/openwrt-daede](https://github.com/kenzok8/openwrt-daede) `main` 分支的
