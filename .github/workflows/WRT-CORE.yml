@@ -77,7 +77,9 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo -E apt -yqq install bc
+          # Refresh the runner's APT indexes before package removal resolves dependencies.
+          sudo -E apt-get -o Acquire::Retries=3 -o APT::Update::Error-Mode=any -yqq update
+          sudo -E apt-get -yqq install bc
 
       - name: Free Disk Space
         uses: endersonmenezes/free-disk-space@v2
@@ -99,8 +101,8 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt-get -yqq purge firefox
           sudo apt-get -yqq update
+          sudo apt-get -yqq purge firefox
           sudo apt-get -yqq full-upgrade
           sudo apt-get -yqq autoremove --purge
           sudo apt-get -yqq autoclean
@@ -133,6 +135,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: '1.26'
+          cache: false
       - run: go version
 
       - name: Initialization Values

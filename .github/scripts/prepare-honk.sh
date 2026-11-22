@@ -1,14 +1,17 @@
 #!/bin/bash
 # Import the official source recipes without replacing the existing dae/daed/BTF packages.
-set -euo pipefail
+set -Eeuo pipefail
+trap 'printf "honk: failed at %s:%s (exit %s): %s\n" "${BASH_SOURCE[0]}" "$LINENO" "$?" "$BASH_COMMAND" >&2' ERR
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_DIR=$(cd -- "$SCRIPT_DIR/../.." && pwd)
+REPORT_DIR="${GITHUB_WORKSPACE:-$PROJECT_DIR}/build-reports"
+mkdir -p "$REPORT_DIR"
 test -d ./package
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 # Refresh versions for every build, then keep that selection throughout the build.
-VERSIONS_FILE="$TEMP_DIR/honk-versions.json"
+VERSIONS_FILE="$REPORT_DIR/honk-versions.json"
 python3 "$SCRIPT_DIR/resolve-honk-versions.py" "$VERSIONS_FILE"
 HONK_TAG=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["honk"]["tag"])' "$VERSIONS_FILE")
 
@@ -105,8 +108,3 @@ PY
 
 echo "honk: official feed $FEED_COMMIT; backend $HONK_TAG"
 grep '^DOONA_' ./package/honk/src/.github/ci/pins.env
-# Upstream now uses rc.d for autostart; its first-boot script disables fresh installs.
-grep -qF '/etc/init.d/honk disable' ./package/honk/files/honk.uci-defaults
-REPORT_DIR="${GITHUB_WORKSPACE:-$PROJECT_DIR}/build-reports"
-mkdir -p "$REPORT_DIR"
-cp "$VERSIONS_FILE" "$REPORT_DIR/honk-versions.json"
